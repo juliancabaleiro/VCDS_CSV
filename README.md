@@ -59,6 +59,9 @@ The following configuration was used for **data acquisition and diagnostics**:
 * **Hardware Interface:** **HEX-V2 Dual-K & CAN <-> USB VAG/ISO interface**.
 
 ![Texto Alternativo](doc/engine-screen.png)
+
+
+
 ![Texto Alternativo](doc/meas-block.png)
 
 ## ⚠️ Important Warnings
