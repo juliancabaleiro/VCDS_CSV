@@ -55,5 +55,4 @@ Follow these steps to set up and run the application locally:
 | Restriction | Description |
 | :--- | :--- |
 | **ECU Compatibility** | Only tested and guaranteed for CSV files generated with the **MARELLI 1AVP MPSF DG23** ECU. |
-| **Data Blocks** | The parsing function is only guaranteed to work if the log contains exactly **3 data measurement groups**. | 
 | **Data Sampling** | VCDS samples each measurement group sequentially. This means the data points for different groups are **not perfectly synchronized in time**. |

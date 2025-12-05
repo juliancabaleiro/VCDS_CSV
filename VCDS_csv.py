@@ -22,6 +22,7 @@ import plotly.express as px
 #VCDS
 
 group_names = {
+    "0": ["STAMP-0","Intake_temp_[dec]","battery_[dec]","Engine_temp_[dec]","Load_[dec]","lambda_[dec]","NC","NC","Thorttle_[dec]","Ton_[dec]","RPM_[dec]"],
     "1": ["STAMP-1","RPM-1","Engine_temp_[°C]","lambda_[V]","Binary_block-1"],
     "2": ["STAMP-2","RPM-2","Ton_[ms]","battery_[V]","Intake_temp_[°C]"],
     "3": ["STAMP-3","RPM-3","Load_[%]","Thorttle_[°]","IAC_[#step]"],
@@ -33,6 +34,7 @@ group_names = {
     "2-b": ["STAMP-2","RPM","Ton_[ms]","battery_[V]","Engine_temp_[°C]"],
     "3-b": ["STAMP-3","RPM-3","Load_[%]","Ignition_[°AMPS]","IAC_[#step]"],
     "4-b": ["STAMP-4","RPM-4","Ignition_[°AMPS]","Thorttle_[°]","Binary_block-4"],
+    "empty": ["vacio","vacio","vacio","vacio","vacio"],
 }
 
 BLOQUE_01_DATA = [
@@ -103,6 +105,8 @@ def open_csv_1AVP(path, stamp_off= True):
   HEADER_ROW_INDEX = 5      
   ENCODING = 'latin-1'
   key_del ="STAMP"
+  key_del2 ="NC"
+  key_del3 ="vacio"
   metadatos = {}
   list_A = list_B = list_C = [] 
   
@@ -135,13 +139,20 @@ def open_csv_1AVP(path, stamp_off= True):
             metadatos['ecu_model'] = linea_2_campos[2].strip()
         #line 4
         linea_4_str = metadatos_lineas[3]
-        grupos = re.findall(r"Group [A-C]:,?'00(\d)", linea_4_str)
-        if len(grupos) == 3:
-            metadatos['group_A'] = int(grupos[0])
-            metadatos['group_B'] = int(grupos[1])
-            metadatos['group_C'] = int(grupos[2])
-        else:
-            print("Warning only ",len(grupos), " extracted")
+        linea_sin_marker = linea_4_str.replace('Marker,', '')
+        patron_valor = r"Group [A-C]:,?'00(\d)|(Group [A-C]:,?\s*Not Running)"
+        coincidencias = re.findall(patron_valor, linea_sin_marker)
+        grupos = []
+        for captura_digito, captura_not_running in coincidencias:
+            if captura_digito:
+                grupos.append(int(captura_digito))
+            else:
+                grupos.append(-1)
+       
+        metadatos['group_A'] = int(grupos[0])
+        metadatos['group_B'] = int(grupos[1])
+        metadatos['group_C'] = int(grupos[2])
+
     #data
     # header=5 (línea 6) y encoding='latin-1' 
     df = pd.read_csv(
@@ -158,10 +169,21 @@ def open_csv_1AVP(path, stamp_off= True):
     b=str(metadatos['group_B'])
     c=str(metadatos['group_C'])
 
-    list_A=group_names[a]
-    list_B=group_names[b]
-    list_C=group_names[c]
-    
+    if a == "-1":
+        list_A=group_names["empty"]
+    else:
+        list_A=group_names[a]
+
+    if b == "-1":
+        list_B=group_names["empty"]
+    else:
+        list_B=group_names[b]
+
+    if c == "-1":
+        list_C=group_names["empty"]
+    else:
+        list_C=group_names[c]
+
     #Some values change their position depending the values blocks
     if "1" in {a,b,c} and "2" in {a,b,c}:
         if a == "1":
@@ -182,9 +204,12 @@ def open_csv_1AVP(path, stamp_off= True):
     list_final = list_A + list_B + list_C
     if len(list_final) == len(df.columns):
         df.columns = list_final
+
     datos_dic = df.to_dict(orient='list')
     if stamp_off:
         datos_dic=delete_field(datos_dic,key_del)
+        datos_dic=delete_field(datos_dic,key_del2)
+        datos_dic=delete_field(datos_dic,key_del3)
     return datos_dic, metadatos
       
   except FileNotFoundError:
@@ -275,7 +300,6 @@ def html_metadata(data):
         )
 
     return html.Div(
-        id='load-div', 
         className="mt-2 card p-3 shadow-sm", 
         children=componentes
     )
@@ -604,4 +628,3 @@ def dash_app_launch():
 if __name__ == '__main__':
     
     dash_app_launch()
-
